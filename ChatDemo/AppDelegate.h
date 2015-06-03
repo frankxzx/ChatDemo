@@ -7,8 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "EaseMob.h"
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
+{
+    EMConnectionState _connectionState;
+}
 
 @property (strong, nonatomic) UIWindow *window;
 

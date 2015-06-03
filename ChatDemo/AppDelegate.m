@@ -8,6 +8,7 @@
 
 #import "AppDelegate.h"
 
+
 @interface AppDelegate ()
 
 @end
@@ -16,8 +17,87 @@
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
+    //registerSDKWithAppKey:注册的appKey，详细见下面注释。
+    //apnsCertName:推送证书名(不需要加后缀)，详细见下面注释。
+    [[EaseMob sharedInstance] registerSDKWithAppKey:@"touchspring#chatdemo"
+                                       apnsCertName:@"chatDemo"
+                                        otherConfig:@{kSDKConfigEnableConsoleLogger:[NSNumber numberWithBool:YES]}];
+    [[EaseMob sharedInstance] application:application didFinishLaunchingWithOptions:launchOptions];
     return YES;
+}
+
+// App进入后台
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    [[EaseMob sharedInstance] applicationDidEnterBackground:application];
+}
+
+// App将要从后台返回
+- (void)applicationWillEnterForeground:(UIApplication *)application
+{
+    [[EaseMob sharedInstance] applicationWillEnterForeground:application];
+}
+
+// 申请处理时间
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+    [[EaseMob sharedInstance] applicationWillTerminate:application];
+}
+
+#pragma mark - IChatManagerDelegate
+// 开始自动登录回调
+-(void)willAutoLoginWithInfo:(NSDictionary *)loginInfo error:(EMError *)error
+{
+    UIAlertView *alertView = nil;
+    if (error) {
+        alertView = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"prompt", @"Prompt") message:NSLocalizedString(@"login.errorAutoLogin", @"Automatic logon failure") delegate:nil cancelButtonTitle:NSLocalizedString(@"ok", @"OK") otherButtonTitles:nil, nil];
+    }
+    else{
+        alertView = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"prompt", @"Prompt") message:NSLocalizedString(@"login.beginAutoLogin", @"Start automatic login...") delegate:nil cancelButtonTitle:NSLocalizedString(@"ok", @"OK") otherButtonTitles:nil, nil];
+        
+        //将旧版的coredata数据导入新的数据库
+        EMError *error = [[EaseMob sharedInstance].chatManager importDataToNewDatabase];
+        if (!error) {
+            error = [[EaseMob sharedInstance].chatManager loadDataFromDatabase];
+        }
+    }
+    
+    [alertView show];
+}
+// 打印收到的apns信息
+-(void)didReceiveRemoteNotification:(NSDictionary *)userInfo
+{
+    NSError *parseError = nil;
+    NSData  *jsonData = [NSJSONSerialization dataWithJSONObject:userInfo
+                                                        options:NSJSONWritingPrettyPrinted error:&parseError];
+    NSString *str =  [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"推送内容"
+                                                    message:str
+                                                   delegate:nil
+                                          cancelButtonTitle:NSLocalizedString(@"ok", @"OK")
+                                          otherButtonTitles:nil];
+    [alert show];
+    
+}
+
+// 网络状态变化回调
+- (void)didConnectionStateChanged:(EMConnectionState)connectionState
+{
+    _connectionState = connectionState;
+    switch (_connectionState) {
+        case eEMConnectionConnected: {
+            NSLog(@"连接成功。。");
+            break;
+        }
+        case eEMConnectionDisconnected: {
+            NSLog(@"连接失败。。");
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {
@@ -25,21 +105,8 @@
     // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-}
-
-- (void)applicationWillEnterForeground:(UIApplication *)application {
-    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-}
-
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
 @end
